@@ -1,0 +1,126 @@
+---
+title: "Homework11"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE,warning=FALSE,message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyverse)
+library(nycflights13)
+library(ggplot2)
+library(maps)
+
+```
+
+
+### Question 1
+
+```{r}
+flight_freq<-nycflights13::flights %>% group_by(origin, dest) %>%
+  summarize(num_flights = n(), .groups = "drop")
+
+head(flight_freq) %>% knitr::kable()
+```
+
+^[Question 1 complete]
+
+
+### Question 2
+
+```{r}
+flight_lat_long<-flight_freq %>% left_join(airports %>% select(faa, lat, lon), join_by(origin==faa)) %>%
+  rename(origin_lat = lat, origin_lon = lon) %>%
+  relocate(origin_lat, origin_lon, .after = origin)
+
+head(flight_lat_long) %>% knitr::kable()
+```
+
+^[Question 2 complete]
+
+### Question 3
+
+```{r}
+ggplot() +
+  geom_polygon(
+    data = map_data("state"), 
+    mapping = aes(x = long, y = lat, group = group),
+    fill = NA, 
+    color = "gray"
+  ) +
+  coord_fixed(1.3) +
+  labs(title = "Map of Continental United States",
+       x = "Longitude", 
+       y = "Latitude")
+```
+
+^[Question 3 complete]
+
+### Question 4 
+
+
+```{r}
+plot_data<-flight_freq %>%
+  left_join(airports %>% select(faa, lat, lon), join_by(origin == faa)) %>%
+  rename(orig_lat = lat, orig_lon = lon) %>%
+  left_join(airports %>% select(faa, lat, lon), join_by(dest == faa)) %>%
+  rename(dest_lat = lat, dest_lon = lon) %>% drop_na(orig_lat, orig_lon, dest_lat, dest_lon)
+
+ggplot() +
+  geom_polygon(
+    data = map_data("state"), 
+    mapping = aes(x = long, y = lat, group = group),
+    fill = NA, 
+    color = "gray"
+  )+geom_segment(
+    data = plot_data, 
+    mapping = aes(
+      x = orig_lon, 
+      y = orig_lat, 
+      xend = dest_lon, 
+      yend = dest_lat, 
+      alpha = num_flights
+    ))+coord_fixed(1.3)+
+  labs(
+    title="Flights in the United States",
+    alpha="Flights"
+  )
+```
+^[Question 4 complete]
+
+### Question 5
+
+```{r}
+flight_freq_mainland <- plot_data %>%
+  filter(
+    dest_lon > -125, dest_lon < -66,
+    dest_lat > 24 ,dest_lat < 50
+  )
+ggplot() +
+  geom_polygon(
+    data = map_data("state"), 
+    mapping = aes(x = long, y = lat, group = group),
+    fill = NA, 
+    color = "gray"
+  ) +
+  geom_segment(
+    data = flight_freq_mainland, 
+    mapping = aes(
+      x = orig_lon, 
+      y = orig_lat, 
+      xend = dest_lon, 
+      yend = dest_lat, 
+      alpha = num_flights
+    )
+  ) +
+  coord_fixed(1.3) +
+  theme_minimal() +
+  labs(
+    title = "Flight Paths Continental US Only",
+    alpha = "Flights"
+  )
+```
+
+^[Question 5 complete]
